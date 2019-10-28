@@ -10,31 +10,18 @@
 #include "src/texture2D.h"
 #include "src/camera.h"
 
-//constants
-const char* APP_TITLE = "Get Mineral";
-int gWinWidth = 1024;
-int gWinHeight = 768;
+#include "constants.h"
+
+//class variables
 GLFWwindow* pWindow = NULL; //pointer to window
-bool gFullScreen = false; //set true for Fullscreen
-bool gWireFrame = false; //set true for Wireframe view
+FPSCamera fpsCam(glm::vec3(0.0f, 0.0f, 5.0f));
 const string grass_side = "res/textures/grass_side.png";
 const string floor_image = "res/textures/grid.jpg";
 
-FPSCamera fpsCam(glm::vec3(0.0f, 0.0f, 5.0f));
-
-/*OrbitCamera orbitCam;
-float gYaw = 0.0f;
-float gPitch = 0.0f;
-float gRadius = 10.0f;*/
-
-const double ZOOM_SENSITIVITY = -3.0;
-const float MOVE_SPEED = 5.0; //units per second
-const float MOUSE_SENSITIVITY = 0.25f;
 
 //func declarations
 void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode);
 void glfw_onFrameBufferSiz(GLFWwindow *window, int width, int height);
-void glfw_onMouseMove(GLFWwindow *window, double posX, double posY);
 void glfw_onMouseScroll(GLFWwindow *window, double deltaX, double deltaY);
 void update(double elapsedTime);
 void showFPS(GLFWwindow* window);
@@ -160,20 +147,12 @@ int main()
 
 		glm::mat4 model, view, projection;
 
-		/*
-		orbitCam.setLookAt(cubePos);
-		orbitCam.rotate(gYaw, gPitch);
-		orbitCam.setRadius(gRadius); */
-
-
 		model = glm::translate(model, cubePos);
-		//view = orbitCam.getViewMatrix();
-		//projection = glm::perspective(glm::radians(45.0f), (float)gWinWidth / (float)gWinHeight, 0.1f, 100.0f);
 
 		view = fpsCam.getViewMatrix();
 
 
-		projection = glm::perspective(glm::radians(fpsCam.getFOV()), (float)gWinWidth / (float)gWinHeight, 0.1f, 100.0f);
+		projection = glm::perspective(glm::radians(fpsCam.getFOV()), (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT, 0.1f, 100.0f);
 
 		shaderProgram.use();
 
@@ -236,7 +215,7 @@ bool initOpenGL() {
 
 	/********* Create Window *********/
 	//Fullscreen
-	if (gFullScreen)
+	if (G_FULLSCREEN)
 	{
 		GLFWmonitor* pMonitor = glfwGetPrimaryMonitor(); //get pointer to primary monitor
 		const GLFWvidmode* pVmode = glfwGetVideoMode(pMonitor);
@@ -248,7 +227,7 @@ bool initOpenGL() {
 
 	//Default
 	else {
-		pWindow = glfwCreateWindow(gWinWidth, gWinHeight, APP_TITLE, NULL, NULL);
+		pWindow = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, APP_TITLE, NULL, NULL);
 	}
 
 	if (pWindow == NULL)
@@ -261,12 +240,11 @@ bool initOpenGL() {
 	//if window creation successful, make current window
 	glfwMakeContextCurrent(pWindow);
 	glfwSetKeyCallback(pWindow, glfw_onKey);
-	glfwSetCursorPosCallback(pWindow, glfw_onMouseMove);
 	glfwSetScrollCallback(pWindow, glfw_onMouseScroll);
 
 	//Hides and grabs cursor, unlimited movement
 	glfwSetInputMode(pWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	glfwSetCursorPos(pWindow, gWinWidth / 2.0, gWinHeight / 2.0);
+	glfwSetCursorPos(pWindow, WINDOW_WIDTH / 2.0, WINDOW_HEIGHT / 2.0);
 
 	//initialize GLEW on window creation
 	glewExperimental = GL_TRUE;
@@ -278,7 +256,7 @@ bool initOpenGL() {
 
 	//set screen color
 	glClearColor(0.23f, 0.38f, 0.47f, 1.0f); //RGBAlpha color channels, from 0 to 1
-	glViewport(0, 0, gWinWidth, gWinHeight);
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glEnable(GL_DEPTH_TEST);
 
 	return true;
@@ -291,37 +269,13 @@ void glfw_onKey(GLFWwindow* window, int key, int scancode, int action, int mode)
 		glfwSetWindowShouldClose(window, GL_TRUE);
 	if (key == GLFW_KEY_1 && action == GLFW_PRESS)
 	{
-		gWireFrame = !gWireFrame;
-		if (gWireFrame)
+		G_WIREFRAME = !G_WIREFRAME;
+		if (G_WIREFRAME)
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
 
-}
-
-void glfw_onMouseMove(GLFWwindow *window, double posX, double posY)
-{	//for orbit cam
-	/*static glm::vec2 lastMousePos = glm::vec2(0, 0);
-
-	//update angles based on left mouse button input to orbit around object
-	if (glfwGetMouseButton(pWindow, GLFW_MOUSE_BUTTON_LEFT) == 1)
-	{
-		//each pixel represents a quarter of a degree rotation (mouse sensitivity)
-		gYaw -= ((float)posX - lastMousePos.x) * MOUSE_SENSITIVITY;
-		gPitch += ((float)posY - lastMousePos.y) * MOUSE_SENSITIVITY;
-	}
-
-	//change orbit camera radius with the right mouse button
-	if (glfwGetMouseButton(pWindow, GLFW_MOUSE_BUTTON_RIGHT) == 1)
-	{
-		float dx = 0.01f * ((float)posX - lastMousePos.x);
-		float dy = 0.01f * ((float)posY - lastMousePos.y);
-		gRadius += dx - dy;
-	}
-
-	lastMousePos.x = (float)posX;
-	lastMousePos.y = (float)posY; */
 }
 
 void glfw_onMouseScroll(GLFWwindow *window, double deltaX, double deltaY)
@@ -342,10 +296,10 @@ void update(double elapsedTime)
 	glfwGetCursorPos(pWindow, &mouseX, &mouseY);
 
 	// Rotate the camera the difference in mouse distance from the center screen.  Multiply this delta by a speed scaler
-	fpsCam.rotate((float)(gWinWidth / 2.0 - mouseX) * MOUSE_SENSITIVITY, (float)(gWinHeight / 2.0 - mouseY) * MOUSE_SENSITIVITY);
+	fpsCam.rotate((float)(WINDOW_WIDTH / 2.0 - mouseX) * MOUSE_SENSITIVITY, (float)(WINDOW_HEIGHT / 2.0 - mouseY) * MOUSE_SENSITIVITY);
 
 	// Clamp mouse cursor to center of screen
-	glfwSetCursorPos(pWindow, gWinWidth / 2.0, gWinHeight / 2.0);
+	glfwSetCursorPos(pWindow, WINDOW_WIDTH / 2.0, WINDOW_HEIGHT / 2.0);
 
 	// Camera FPS movement
 
@@ -370,9 +324,9 @@ void update(double elapsedTime)
 
 void glfw_onFrameBufferSiz(GLFWwindow *window, int width, int height)
 {
-	gWinWidth = width;
-	gWinHeight = height;
-	glViewport(0, 0, gWinWidth, gWinHeight);
+	WINDOW_WIDTH = width;
+	WINDOW_HEIGHT = height;
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
 }
 
